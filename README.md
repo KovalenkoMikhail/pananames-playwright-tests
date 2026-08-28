@@ -17,13 +17,15 @@ npx playwright install chromium
 cp .env.example .env
 ```
 
-Open `.env` and replace the placeholders with a real MCP (dev) account. The example email/password will not log in.
+Credentials are **not** in the repository. Put the MCP (dev) account from the assignment into `.env`, then run `npm test`:
 
 ```
 BASE_URL=https://mcp.pananames-dev.com
-MCP_EMAIL=your-email@example.com
-MCP_PASSWORD=your-password
+MCP_EMAIL=...
+MCP_PASSWORD=...
 ```
+
+If `.env` is missing or still has the example placeholders, setup stops with an error. That is expected — tests cannot log in without a real account.
 
 ## Run tests
 
