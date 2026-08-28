@@ -1,48 +1,54 @@
 # Pananames MCP — Playwright tests
 
-Automated UI tests for the Pananames MCP (dev) environment: contacts CRUD and domain search → cart TOTAL checks.
+UI tests for Pananames MCP (dev): contacts CRUD and domain search → cart `TOTAL`.
 
-## Requirements
+## Prerequisites
 
 - Node.js 18+
 - npm
 
-## Setup
+## Install
+
+From the project root:
 
 ```bash
-git clone https://github.com/KovalenkoMikhail/pananames-playwright-tests.git
-cd pananames-playwright-tests
 npm install
 npx playwright install chromium
+```
+
+`npm install` installs packages only. Playwright browsers are downloaded separately — without `playwright install chromium` tests cannot launch a browser. Chromium is enough: the suite has a single Chromium project.
+
+```bash
 cp .env.example .env
 ```
 
-Credentials are **not** in the repository. Put the MCP (dev) account from the assignment into `.env`, then run `npm test`:
+Credentials are **not** in the repository. Put the MCP (dev) account from the assignment into `.env`:
 
 ```
 BASE_URL=https://mcp.pananames-dev.com
-MCP_EMAIL=...
-MCP_PASSWORD=...
+MCP_EMAIL=
+MCP_PASSWORD=
 ```
 
-If `.env` is missing or still has the example placeholders, setup stops with an error. That is expected — tests cannot log in without a real account.
+If `.env` is missing or empty, setup stops with an error. That is expected — tests cannot log in without a real account.
 
-## Run tests
+## Run
 
 ```bash
-npm test
+npx playwright test
 ```
 
-Headed / UI mode / HTML report / typecheck:
+or `npm test`.
 
-```bash
-npm run test:headed
-npm run test:ui
-npm run report
-npm run typecheck
-```
+| Command | What it does |
+|---|---|
+| `npx playwright test` | headless run |
+| `npx playwright test --headed` | headed browser |
+| `npx playwright test --ui` | Playwright UI mode |
+| `npx playwright show-report` | last HTML report |
+| `npm run typecheck` | TypeScript check |
 
-`npm run test:ui` lists every spec. Login runs once in `global-setup.ts` before the suite (not as a test in the sidebar).
+UI mode lists the specs (contacts + cart). Login runs once in `global-setup.ts` before the suite, not as a test in the sidebar.
 
 On failure Playwright keeps a trace, screenshot, and video:
 
@@ -57,9 +63,10 @@ tests/           specs
 pages/           page objects (locators + actions)
 fixtures/        Playwright fixtures (POM + cleanup)
 utils/           test data, prices, routes, timeouts
+global-setup.ts  login once → storageState
 ```
 
-Login runs once in `global-setup.ts` and is reused via `storageState`. Specs stay independent; cleanup lives in fixtures, not in `beforeEach` / `try/finally`.
+Specs stay independent. Cleanup lives in fixtures, not in `beforeEach` / `try/finally`.
 
 ## Scenarios
 
