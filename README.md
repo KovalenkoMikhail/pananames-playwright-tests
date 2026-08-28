@@ -10,12 +10,14 @@ Automated UI tests for the Pananames MCP (dev) environment: contacts CRUD and do
 ## Setup
 
 ```bash
+git clone https://github.com/KovalenkoMikhail/pananames-playwright-tests.git
+cd pananames-playwright-tests
 npm install
 npx playwright install chromium
 cp .env.example .env
 ```
 
-Fill `.env` with the test account credentials (do not commit this file):
+Open `.env` and replace the placeholders with a real MCP (dev) account. The example email/password will not log in.
 
 ```
 BASE_URL=https://mcp.pananames-dev.com
