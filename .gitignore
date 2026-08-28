@@ -5,8 +5,12 @@ node_modules/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
-/playwright/.auth/
+/playwright/.auth/*
+!/playwright/.auth/.gitkeep
 
 # Secrets
 .env
 .env.local
+
+# OS
+.DS_Store

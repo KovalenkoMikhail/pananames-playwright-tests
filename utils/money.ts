@@ -1,9 +1,10 @@
 export function parsePrice(text: string): number {
   const matches = [...text.replace(/,/g, '').matchAll(/\$(\d+(?:\.\d+)?)/g)];
-  if (matches.length === 0) {
+  const amount = matches.at(-1)?.[1];
+  if (!amount) {
     throw new Error(`Cannot parse price from: ${text}`);
   }
-  return Number(matches[matches.length - 1][1]);
+  return Number(amount);
 }
 
 export function sumPrices(prices: number[]): number {

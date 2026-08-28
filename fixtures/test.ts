@@ -7,6 +7,8 @@ type AppFixtures = {
   contactsPage: ContactsPage;
   registerDomainPage: RegisterDomainPage;
   cartPage: CartPage;
+  isolatedCart: CartPage;
+  createdContacts: string[];
 };
 
 export const test = base.extend<AppFixtures>({
@@ -18,6 +20,30 @@ export const test = base.extend<AppFixtures>({
   },
   cartPage: async ({ page }, use) => {
     await use(new CartPage(page));
+  },
+  isolatedCart: async ({ cartPage }, use) => {
+    await cartPage.clear();
+    await use(cartPage);
+    await cartPage.clear();
+  },
+  createdContacts: async ({ contactsPage, page }, use) => {
+    const names: string[] = [];
+    await use(names);
+    if (page.isClosed()) {
+      return;
+    }
+
+    const errors: unknown[] = [];
+    for (const name of [...names].reverse()) {
+      try {
+        await contactsPage.deleteIfExists(name);
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+    if (errors[0]) {
+      throw errors[0];
+    }
   },
 });
 

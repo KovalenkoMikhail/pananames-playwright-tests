@@ -1,10 +1,11 @@
-export function uniqueSuffix(): string {
-  return `${Date.now()}${Math.floor(Math.random() * 1000)}`;
-}
-
+/** Contact type/NAME rejects digits on the API; keep names alphabetic. */
 export function uniqueLetters(length = 8): string {
   const alphabet = 'abcdefghijklmnopqrstuvwxyz';
   return Array.from({ length }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('');
+}
+
+export function uniqueSuffix(): string {
+  return `${Date.now()}${Math.floor(Math.random() * 1000)}`;
 }
 
 export function uniqueContactName(prefix = 'QA Auto'): string {

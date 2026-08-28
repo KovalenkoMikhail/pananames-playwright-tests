@@ -1,19 +1,30 @@
 {
   "name": "pananames-playwright-tests",
   "version": "1.0.0",
+  "private": true,
   "description": "Playwright + TypeScript automated tests for Pananames MCP",
   "scripts": {
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
+    "test:contacts": "playwright test tests/contacts.spec.ts",
+    "test:cart": "playwright test tests/register-domain.spec.ts",
+    "typecheck": "tsc --noEmit",
     "report": "playwright show-report"
   },
-  "keywords": ["playwright", "typescript", "e2e"],
-  "author": "",
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "playwright",
+    "typescript",
+    "e2e"
+  ],
   "license": "ISC",
   "devDependencies": {
     "@playwright/test": "^1.62.1",
     "@types/node": "^26.4.0",
-    "dotenv": "^17.4.2"
+    "dotenv": "^17.4.2",
+    "typescript": "5.9"
   }
 }

@@ -1,26 +1,34 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import { routes, TIMEOUTS } from '../utils/constants';
 import { parsePrice } from '../utils/money';
-import { waitForToastGone } from '../utils/toast';
+import { successToast, waitForToastGone } from '../utils/toast';
 
 export class RegisterDomainPage {
-  constructor(private readonly page: Page) {}
+  readonly page: Page;
+  readonly heading: Locator;
+  readonly searchInput: Locator;
+  readonly addToCartButton: Locator;
+  readonly unavailableLabel: Locator;
+  readonly registrationNoticeAgree: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.heading = page.getByRole('heading', { name: /domain availability check and order/i });
+    this.searchInput = page.getByPlaceholder('Enter domain name or keyword');
+    this.addToCartButton = page.getByRole('button', { name: 'Add to cart' });
+    this.unavailableLabel = page.getByText('Domain is not available');
+    this.registrationNoticeAgree = page.getByRole('button', { name: /i agree, add domain to cart/i });
+  }
 
   async goto(): Promise<void> {
-    await this.page.goto('/register-domain');
-    await expect(
-      this.page.getByRole('heading', { name: /domain availability check and order/i }),
-    ).toBeVisible();
+    await this.page.goto(routes.registerDomain);
+    await expect(this.heading).toBeVisible();
   }
 
   async search(query: string): Promise<void> {
-    const input = this.page.getByPlaceholder('Enter domain name or keyword');
-    await input.fill(query);
-    await input.press('Enter');
-    await this.page
-      .getByRole('button', { name: 'Add to cart' })
-      .or(this.page.getByText('Domain is not available'))
-      .first()
-      .waitFor({ timeout: 30_000 });
+    await this.searchInput.fill(query);
+    await this.searchInput.press('Enter');
+    await this.addToCartButton.or(this.unavailableLabel).first().waitFor({ timeout: TIMEOUTS.search });
   }
 
   domainCard(domain: string): Locator {
@@ -35,8 +43,7 @@ export class RegisterDomainPage {
     const struck = card.locator('del');
     if ((await struck.count()) > 0) {
       const struckText = await struck.innerText();
-      const rest = (await card.innerText()).replace(struckText, '');
-      return parsePrice(rest);
+      return parsePrice((await card.innerText()).replace(struckText, ''));
     }
     return parsePrice(await card.innerText());
   }
@@ -44,32 +51,28 @@ export class RegisterDomainPage {
   async addToCart(domain: string): Promise<void> {
     await this.domainCard(domain).getByRole('button', { name: 'Add to cart' }).click();
 
-    const agree = this.page.getByRole('button', { name: /i agree, add domain to cart/i });
-    try {
-      await agree.waitFor({ state: 'visible', timeout: 3_000 });
-      await agree.click();
-      await this.page.getByRole('dialog').waitFor({ state: 'hidden', timeout: 10_000 });
-    } catch {
-      // Some TLDs (e.g. .com) have no registration notice.
+    // Some TLDs (.net) open a registration notice; others toast Success immediately.
+    await Promise.race([
+      this.registrationNoticeAgree.waitFor({ state: 'visible', timeout: TIMEOUTS.notice }),
+      successToast(this.page).waitFor({ state: 'visible', timeout: TIMEOUTS.notice }),
+    ]);
+
+    if (await this.registrationNoticeAgree.isVisible()) {
+      await this.registrationNoticeAgree.click();
+      await this.page.getByRole('dialog').waitFor({ state: 'hidden', timeout: TIMEOUTS.notice });
     }
 
     await waitForToastGone(this.page);
   }
 
   async getAvailableDomains(limit: number): Promise<string[]> {
-    const cards = this.page.getByRole('listitem').filter({
-      has: this.page.getByRole('button', { name: 'Add to cart' }),
-    });
-    await expect(cards.first()).toBeVisible({ timeout: 30_000 });
+    const cards = this.page.getByRole('listitem').filter({ has: this.addToCartButton });
+    await expect(cards.first()).toBeVisible({ timeout: TIMEOUTS.search });
 
     const names: string[] = [];
     const count = await cards.count();
     for (let i = 0; i < count && names.length < limit; i++) {
-      const card = cards.nth(i);
-      if ((await card.getByText('Domain is not available').count()) > 0) {
-        continue;
-      }
-      const name = await this.readDomainName(card);
+      const name = await this.readDomainName(cards.nth(i));
       if (name) {
         names.push(name);
       }
@@ -81,16 +84,8 @@ export class RegisterDomainPage {
     return names;
   }
 
-  async goToCart(): Promise<void> {
-    await this.page.goto('/cart');
-    await expect(
-      this.page.getByRole('heading', { name: /shopping cart|cart is empty/i }),
-    ).toBeVisible();
-  }
-
   private async readDomainName(card: Locator): Promise<string> {
     const text = await card.innerText();
-    const match = text.match(/([a-z0-9-]+\.[a-z][a-z0-9.-]*)/i);
-    return match?.[1] ?? '';
+    return text.match(/([a-z0-9-]+\.[a-z][a-z0-9.-]*)/i)?.[1] ?? '';
   }
 }

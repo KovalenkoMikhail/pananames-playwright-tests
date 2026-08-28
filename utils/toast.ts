@@ -1,16 +1,23 @@
 import { type Page } from '@playwright/test';
+import { TIMEOUTS } from './constants';
+
+/** Vuestic toast title after create/save/add-to-cart. */
+export function successToast(page: Page) {
+  return page.getByText('Success', { exact: true }).first();
+}
 
 export async function waitForToastGone(page: Page): Promise<void> {
-  const toast = page.getByText(/success/i).first();
+  const toast = successToast(page);
   try {
-    await toast.waitFor({ state: 'visible', timeout: 5_000 });
-    const close = page.getByRole('button', { name: /close/i });
-    if (await close.isVisible().catch(() => false)) {
+    await toast.waitFor({ state: 'visible', timeout: TIMEOUTS.toastVisible });
+    const close = page.getByRole('button', { name: /close/i }).first();
+    if (await close.isVisible()) {
       await close.click();
     }
-    await toast.waitFor({ state: 'hidden', timeout: 10_000 });
-  } catch {
-    // Toast may already be gone or use different copy.
+    await toast.waitFor({ state: 'hidden', timeout: TIMEOUTS.toastHidden });
+  } catch (error) {
+    if (!(error instanceof Error) || error.name !== 'TimeoutError') {
+      throw error;
+    }
   }
-  await page.getByRole('dialog').waitFor({ state: 'hidden', timeout: 3_000 }).catch(() => undefined);
 }

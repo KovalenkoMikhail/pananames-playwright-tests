@@ -1,36 +1,54 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import type { ContactInput } from '../utils/contact';
+import { routes, TIMEOUTS } from '../utils/constants';
+import { escapeRegExp, urlEndsWith } from '../utils/regexp';
 import { waitForToastGone } from '../utils/toast';
 
-export type ContactInput = {
-  name: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phoneNumber: string;
-  comment?: string;
-  promoEmails: boolean;
-  productEmails: boolean;
-  financialEmails: boolean;
-  phoneCountry?: string;
-};
+export type { ContactInput };
 
 export class ContactsPage {
-  constructor(private readonly page: Page) {}
+  readonly page: Page;
+  readonly heading: Locator;
+  readonly addButton: Locator;
+  readonly createButton: Locator;
+  readonly saveButton: Locator;
+  readonly confirmDeleteButton: Locator;
+  readonly promoEmails: Locator;
+  readonly productEmails: Locator;
+  readonly financialEmails: Locator;
 
-  async goto(): Promise<void> {
-    await this.page.goto('/contacts');
-    await expect(this.page.getByRole('heading', { name: 'Contacts' })).toBeVisible();
-    await expect(this.row('Primary')).toBeVisible();
-  }
-
-  async openAddForm(): Promise<void> {
-    await this.page.getByRole('button', { name: '+ Add New Contact' }).click();
-    await expect(this.page).toHaveURL(/\/contacts\/add/);
-    await expect(this.page.getByRole('heading', { name: 'Create new contact' })).toBeVisible();
+  constructor(page: Page) {
+    this.page = page;
+    this.heading = page.getByRole('heading', { name: 'Contacts', exact: true });
+    this.addButton = page.getByRole('button', { name: '+ Add New Contact' });
+    this.createButton = page.getByRole('button', { name: 'Create' });
+    this.saveButton = page.getByRole('button', { name: 'Save' });
+    this.confirmDeleteButton = page.getByRole('button', { name: 'OK' });
+    this.promoEmails = page.getByRole('checkbox', { name: /promotional emails/i });
+    this.productEmails = page.getByRole('checkbox', { name: /product emails/i });
+    this.financialEmails = page.getByRole('checkbox', { name: /financial emails/i });
   }
 
   row(name: string): Locator {
     return this.page.getByRole('row').filter({ hasText: name });
+  }
+
+  async goto(): Promise<void> {
+    await this.page.goto(routes.contacts);
+    await expect(this.heading).toBeVisible();
+    await expect(this.row('Primary')).toBeVisible();
+  }
+
+  async createContact(data: ContactInput): Promise<void> {
+    await this.goto();
+    await this.addButton.click();
+    await expect(this.page).toHaveURL(urlEndsWith(routes.contactsAdd));
+    await expect(this.page.getByRole('heading', { name: 'Create new contact' })).toBeVisible();
+    await this.fillForm(data);
+    await expect(this.createButton).toBeEnabled();
+    await this.createButton.click();
+    await expect(this.page).toHaveURL(urlEndsWith(routes.contacts));
+    await waitForToastGone(this.page);
   }
 
   async fillForm(data: ContactInput): Promise<void> {
@@ -43,48 +61,29 @@ export class ContactsPage {
     if (data.comment !== undefined) {
       await this.field('Comment (optional)').fill(data.comment);
     }
-    await this.setCheckbox(/promotional emails/i, data.promoEmails);
-    await this.setCheckbox(/product emails/i, data.productEmails);
-    await this.setCheckbox(/financial emails/i, data.financialEmails);
-  }
-
-  async create(): Promise<void> {
-    await expect(this.page.getByRole('button', { name: 'Create' })).toBeEnabled();
-    await this.page.getByRole('button', { name: 'Create' }).click();
-    await expect(this.page).toHaveURL(/\/contacts\/?$/);
-    await waitForToastGone(this.page);
+    // Vuestic checkbox overlay intercepts the real input; force reaches the control.
+    await this.promoEmails.setChecked(data.promoEmails, { force: true });
+    await this.productEmails.setChecked(data.productEmails, { force: true });
+    await this.financialEmails.setChecked(data.financialEmails, { force: true });
   }
 
   async save(): Promise<void> {
-    await this.page.getByRole('button', { name: 'Save' }).click();
-    await expect(this.page).toHaveURL(/\/contacts\/?$/, { timeout: 15_000 });
+    await this.saveButton.click();
+    await expect(this.page).toHaveURL(urlEndsWith(routes.contacts), { timeout: TIMEOUTS.save });
     await waitForToastGone(this.page);
   }
 
   async openEdit(name: string): Promise<void> {
-    await this.row(name).getByRole('button').first().click();
-    await expect(this.page.getByRole('heading', { name: /edit contact/i })).toBeVisible();
+    await this.rowActions(name).first().click();
+    await expect(this.page.getByRole('heading', { name: 'Edit contact' })).toBeVisible();
     await expect(this.field('Contact type/NAME')).toHaveValue(name);
   }
 
   async deleteContact(name: string): Promise<void> {
-    const row = this.row(name);
-    const buttons = row.getByRole('button');
-    await buttons.nth(1).click();
-    const confirm = this.page.getByRole('button', { name: 'OK' });
-    await expect(confirm).toBeVisible();
-    await confirm.click();
+    await this.rowActions(name).last().click();
+    await this.confirmDeleteButton.click();
     await waitForToastGone(this.page);
     await expect(this.row(name)).toHaveCount(0);
-  }
-
-  async expectRowVisible(name: string): Promise<void> {
-    await expect(this.row(name)).toBeVisible();
-  }
-
-  async expectDefaultContactsPresent(): Promise<void> {
-    await expect(this.row('Primary')).toBeVisible();
-    await expect(this.row('Abuse')).toBeVisible();
   }
 
   async expectFormValues(data: ContactInput): Promise<void> {
@@ -96,12 +95,20 @@ export class ContactsPage {
     if (data.comment !== undefined) {
       await expect(this.field('Comment (optional)')).toHaveValue(data.comment);
     }
-    await expect(this.checkbox(/promotional emails/i)).toBeChecked({ checked: data.promoEmails });
-    await expect(this.checkbox(/product emails/i)).toBeChecked({ checked: data.productEmails });
-    await expect(this.checkbox(/financial emails/i)).toBeChecked({ checked: data.financialEmails });
+    await expect(this.promoEmails).toBeChecked({ checked: data.promoEmails });
+    await expect(this.productEmails).toBeChecked({ checked: data.productEmails });
+    await expect(this.financialEmails).toBeChecked({ checked: data.financialEmails });
+  }
+
+  async expectProtectedContacts(): Promise<void> {
+    await expect(this.row('Primary')).toBeVisible();
+    await expect(this.row('Abuse')).toBeVisible();
   }
 
   async deleteIfExists(name: string): Promise<void> {
+    if (this.page.isClosed()) {
+      return;
+    }
     await this.goto();
     if ((await this.row(name).count()) === 0) {
       return;
@@ -109,29 +116,29 @@ export class ContactsPage {
     await this.deleteContact(name);
   }
 
+  /**
+   * Icon buttons have no accessible name. In a contact row the first action is
+   * edit and the last is delete.
+   */
+  private rowActions(name: string): Locator {
+    return this.row(name).getByRole('button');
+  }
+
+  /**
+   * Floating labels are not wired to inputs (`aria-label` is `$t:inputField`),
+   * so fields are resolved via the visible label next to the Vuestic input.
+   */
   private field(label: string): Locator {
-    const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escaped = escapeRegExp(label);
     return this.page
       .locator('div.relative')
       .filter({ has: this.page.locator('label').filter({ hasText: new RegExp(`^${escaped}$`) }) })
       .locator('input.va-input__content__input');
   }
 
-  private checkbox(name: RegExp): Locator {
-    return this.page.getByRole('checkbox', { name });
-  }
-
-  private async setCheckbox(name: RegExp, checked: boolean): Promise<void> {
-    const box = this.checkbox(name);
-    if ((await box.isChecked()) !== checked) {
-      await this.page.locator('.va-checkbox').filter({ has: box }).click();
-    }
-  }
-
   private async selectPhoneCountry(country: string): Promise<void> {
-    const selected = this.page.locator('.country-intl-label-text');
-    const current = ((await selected.textContent()) ?? '').trim();
-    if (current.toLowerCase().includes(country.toLowerCase())) {
+    const selected = ((await this.page.locator('.country-intl-label-text').textContent()) ?? '').trim();
+    if (selected.toLowerCase().includes(country.toLowerCase())) {
       return;
     }
 
