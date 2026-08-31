@@ -1,5 +1,17 @@
-import type { ContactInput } from './contact';
 import { uniqueContactName, uniqueEmail, uniquePhoneNumber } from './unique';
+
+export type ContactInput = {
+  name: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  phoneCountry: string;
+  comment?: string;
+  promoEmails: boolean;
+  productEmails: boolean;
+  financialEmails: boolean;
+};
 
 export function buildContact(overrides: Partial<ContactInput> = {}): ContactInput {
   return {
@@ -8,6 +20,7 @@ export function buildContact(overrides: Partial<ContactInput> = {}): ContactInpu
     lastName: 'QA',
     email: uniqueEmail(),
     phoneNumber: uniquePhoneNumber(),
+    phoneCountry: 'Ukraine',
     comment: 'Playwright test contact',
     promoEmails: false,
     productEmails: true,

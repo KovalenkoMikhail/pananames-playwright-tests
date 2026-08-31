@@ -1,24 +1,15 @@
-import { expect, type Locator, type Page } from '@playwright/test';
+import { expect, type Locator } from '@playwright/test';
 import { routes, TIMEOUTS } from '../utils/constants';
 import { parsePrice } from '../utils/money';
 import { successToast, waitForToastGone } from '../utils/toast';
+import { BasePage } from './base.page';
 
-export class RegisterDomainPage {
-  readonly page: Page;
-  readonly heading: Locator;
-  readonly searchInput: Locator;
-  readonly addToCartButton: Locator;
-  readonly unavailableLabel: Locator;
-  readonly registrationNoticeAgree: Locator;
-
-  constructor(page: Page) {
-    this.page = page;
-    this.heading = page.getByRole('heading', { name: /domain availability check and order/i });
-    this.searchInput = page.getByPlaceholder('Enter domain name or keyword');
-    this.addToCartButton = page.getByRole('button', { name: 'Add to cart' });
-    this.unavailableLabel = page.getByText('Domain is not available');
-    this.registrationNoticeAgree = page.getByRole('button', { name: /i agree, add domain to cart/i });
-  }
+export class RegisterDomainPage extends BasePage {
+  readonly heading = this.page.getByRole('heading', { name: /domain availability check and order/i });
+  readonly searchInput = this.page.getByPlaceholder('Enter domain name or keyword');
+  readonly addToCartButton = this.page.getByRole('button', { name: 'Add to cart' });
+  readonly unavailableLabel = this.page.getByText('Domain is not available');
+  readonly registrationNoticeAgree = this.page.getByRole('button', { name: /i agree, add domain to cart/i });
 
   async goto(): Promise<void> {
     await this.page.goto(routes.registerDomain);

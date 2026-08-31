@@ -3,12 +3,15 @@ import { CartPage } from '../pages/cart.page';
 import { ContactsPage } from '../pages/contacts.page';
 import { RegisterDomainPage } from '../pages/register-domain.page';
 
+type CreatedContacts = {
+  add: (...names: string[]) => void;
+};
+
 type AppFixtures = {
   contactsPage: ContactsPage;
   registerDomainPage: RegisterDomainPage;
-  cartPage: CartPage;
   isolatedCart: CartPage;
-  createdContacts: string[];
+  createdContacts: CreatedContacts;
 };
 
 export const test = base.extend<AppFixtures>({
@@ -18,17 +21,19 @@ export const test = base.extend<AppFixtures>({
   registerDomainPage: async ({ page }, use) => {
     await use(new RegisterDomainPage(page));
   },
-  cartPage: async ({ page }, use) => {
-    await use(new CartPage(page));
-  },
-  isolatedCart: async ({ cartPage }, use) => {
+  isolatedCart: async ({ page }, use) => {
+    const cartPage = new CartPage(page);
     await cartPage.clear();
     await use(cartPage);
     await cartPage.clear();
   },
   createdContacts: async ({ contactsPage, page }, use) => {
     const names: string[] = [];
-    await use(names);
+    await use({
+      add: (...next) => {
+        names.push(...next);
+      },
+    });
     if (page.isClosed()) {
       return;
     }

@@ -60,7 +60,7 @@ npx playwright show-trace test-results/<test-folder>/trace.zip
 
 ```
 tests/           specs
-pages/           page objects (locators + actions)
+pages/           page objects (BasePage + locators + actions)
 fixtures/        Playwright fixtures (POM + cleanup)
 utils/           test data, prices, routes, timeouts
 global-setup.ts  login once → storageState

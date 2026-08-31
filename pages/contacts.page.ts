@@ -1,36 +1,22 @@
-import { expect, type Locator, type Page } from '@playwright/test';
-import type { ContactInput } from '../utils/contact';
+import { expect, type Locator } from '@playwright/test';
+import type { ContactInput } from '../utils/test-data';
 import { routes, TIMEOUTS } from '../utils/constants';
 import { escapeRegExp, urlEndsWith } from '../utils/regexp';
 import { waitForToastGone } from '../utils/toast';
+import { BasePage } from './base.page';
 
-export type { ContactInput };
-
-export class ContactsPage {
-  readonly page: Page;
-  readonly heading: Locator;
-  readonly addButton: Locator;
-  readonly createButton: Locator;
-  readonly saveButton: Locator;
-  readonly confirmDeleteButton: Locator;
-  readonly promoEmails: Locator;
-  readonly productEmails: Locator;
-  readonly financialEmails: Locator;
-
-  constructor(page: Page) {
-    this.page = page;
-    this.heading = page.getByRole('heading', { name: 'Contacts', exact: true });
-    this.addButton = page.getByRole('button', { name: '+ Add New Contact' });
-    this.createButton = page.getByRole('button', { name: 'Create' });
-    this.saveButton = page.getByRole('button', { name: 'Save' });
-    this.confirmDeleteButton = page.getByRole('button', { name: 'OK' });
-    this.promoEmails = page.getByRole('checkbox', { name: /promotional emails/i });
-    this.productEmails = page.getByRole('checkbox', { name: /product emails/i });
-    this.financialEmails = page.getByRole('checkbox', { name: /financial emails/i });
-  }
+export class ContactsPage extends BasePage {
+  readonly heading = this.page.getByRole('heading', { name: 'Contacts', exact: true });
+  readonly addButton = this.page.getByRole('button', { name: '+ Add New Contact' });
+  readonly createButton = this.page.getByRole('button', { name: 'Create' });
+  readonly saveButton = this.page.getByRole('button', { name: 'Save' });
+  readonly confirmDeleteButton = this.page.getByRole('button', { name: 'OK' });
+  readonly promoEmails = this.page.getByRole('checkbox', { name: /promotional emails/i });
+  readonly productEmails = this.page.getByRole('checkbox', { name: /product emails/i });
+  readonly financialEmails = this.page.getByRole('checkbox', { name: /financial emails/i });
 
   row(name: string): Locator {
-    return this.page.getByRole('row').filter({ hasText: name });
+    return this.page.getByRole('row').filter({ has: this.page.getByText(name, { exact: true }) });
   }
 
   async goto(): Promise<void> {
@@ -56,7 +42,7 @@ export class ContactsPage {
     await this.field('First Name').fill(data.firstName);
     await this.field('Last Name').fill(data.lastName);
     await this.field('Email').fill(data.email);
-    await this.selectPhoneCountry(data.phoneCountry ?? 'Ukraine');
+    await this.selectPhoneCountry(data.phoneCountry);
     await this.field('Phone number').fill(data.phoneNumber);
     if (data.comment !== undefined) {
       await this.field('Comment (optional)').fill(data.comment);

@@ -1,11 +1,11 @@
-import { test, expect } from '../fixtures/test';
+import { test, expect } from '../fixtures';
 import { buildContact } from '../utils/test-data';
 import { uniqueContactName } from '../utils/unique';
 
 test.describe('Contacts /contacts', () => {
   test('create a new contact', async ({ contactsPage, createdContacts }) => {
     const contact = buildContact();
-    createdContacts.push(contact.name);
+    createdContacts.add(contact.name);
 
     await test.step('create contact', async () => {
       await contactsPage.createContact(contact);
@@ -33,7 +33,7 @@ test.describe('Contacts /contacts', () => {
       financialEmails: true,
       comment: 'Updated by Playwright',
     });
-    createdContacts.push(contact.name, updated.name);
+    createdContacts.add(contact.name, updated.name);
 
     await test.step('create a contact to edit', async () => {
       await contactsPage.createContact(contact);
@@ -56,7 +56,7 @@ test.describe('Contacts /contacts', () => {
 
   test('delete an existing contact', async ({ contactsPage, createdContacts }) => {
     const contact = buildContact();
-    createdContacts.push(contact.name);
+    createdContacts.add(contact.name);
 
     await test.step('create a contact to delete', async () => {
       await contactsPage.createContact(contact);

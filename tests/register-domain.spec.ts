@@ -1,4 +1,4 @@
-import { test } from '../fixtures/test';
+import { test } from '../fixtures';
 import { sumPrices } from '../utils/money';
 import { CART_TLDS } from '../utils/test-data';
 import { uniqueSld } from '../utils/unique';
@@ -12,12 +12,11 @@ test.describe('Register domain / cart', () => {
       isolatedCart,
     }) => {
       const domain = `${uniqueSld()}${tld}`;
-      let searchPrice = 0;
 
-      await test.step(`search ${domain}`, async () => {
+      const searchPrice = await test.step(`search ${domain}`, async () => {
         await registerDomainPage.goto();
         await registerDomainPage.search(domain);
-        searchPrice = await registerDomainPage.getDomainPrice(domain);
+        return registerDomainPage.getDomainPrice(domain);
       });
 
       await test.step('add to cart', async () => {
@@ -37,16 +36,15 @@ test.describe('Register domain / cart', () => {
     registerDomainPage,
     isolatedCart,
   }) => {
-    let domains: string[] = [];
-    const prices: number[] = [];
-
-    await test.step('search SLD only and collect 3 available domains', async () => {
+    const { domains, prices } = await test.step('search SLD only and collect 3 available domains', async () => {
       await registerDomainPage.goto();
       await registerDomainPage.search(uniqueSld());
-      domains = await registerDomainPage.getAvailableDomains(3);
+      const domains = await registerDomainPage.getAvailableDomains(3);
+      const prices: number[] = [];
       for (const domain of domains) {
         prices.push(await registerDomainPage.getDomainPrice(domain));
       }
+      return { domains, prices };
     });
 
     await test.step('add all three to cart', async () => {

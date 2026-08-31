@@ -6,17 +6,17 @@ import { AUTH_FILE } from './utils/constants';
 import { requiredEnv } from './utils/env';
 
 export default async function globalSetup(config: FullConfig): Promise<void> {
-  fs.mkdirSync(path.dirname(AUTH_FILE), { recursive: true });
+  const project = config.projects[0];
+  const baseURL = project?.use.baseURL;
+  if (!baseURL) {
+    throw new Error('baseURL is missing in playwright.config.ts');
+  }
 
   const email = requiredEnv('MCP_EMAIL');
   const password = requiredEnv('MCP_PASSWORD');
-  if (email === 'your-email@example.com' || password === 'your-password') {
-    throw new Error(
-      'Replace MCP_EMAIL and MCP_PASSWORD in .env with a real MCP account. The .env.example placeholders cannot log in.',
-    );
-  }
 
-  const baseURL = config.projects[0]?.use.baseURL as string | undefined;
+  fs.mkdirSync(path.dirname(AUTH_FILE), { recursive: true });
+
   const browser = await chromium.launch();
   const page = await browser.newPage({ baseURL });
 
@@ -30,4 +30,3 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     await browser.close();
   }
 }
-
